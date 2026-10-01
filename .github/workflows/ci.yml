@@ -1,0 +1,39 @@
+name: Build and test
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: dotnet test SprintPilot.sln -c Release --logger trx
+      - run: npm ci && npm run build
+        working-directory: frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Browser workflow
+        run: |
+          dotnet run --project src/SprintPilot.Api --launch-profile SprintPilot.Api > /tmp/sprintpilot-api.log 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid" || true' EXIT
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:5092/health; then break; fi
+            sleep 1
+          done
+          cd frontend
+          npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-diagnostics
+          path: |
+            **/TestResults/*.trx
+            frontend/test-results/
+            /tmp/sprintpilot-api.log

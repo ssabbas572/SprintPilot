@@ -1,0 +1,3 @@
+Customers should be able to book an appointment by selecting a provider, date and available time.
+Customers should be able to reschedule an existing appointment without creating a duplicate booking.
+After a successful booking, show a confirmation with the appointment details.

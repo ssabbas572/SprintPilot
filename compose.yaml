@@ -1,0 +1,24 @@
+# Local demo only: intentionally seeds demo accounts and uses HTTP.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/SprintPilot.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__SprintPilot: Data Source=/data/sprintpilot.db
+      AI__Provider: ${AI_PROVIDER:-Mock}
+      OpenAI__ApiKey: ${OPENAI_API_KEY:-}
+      OpenAI__Model: ${OPENAI_MODEL:-gpt-4o-mini}
+    volumes:
+      - sprintpilot-data:/data
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:5176:80"
+    depends_on:
+      - api
+volumes:
+  sprintpilot-data:
